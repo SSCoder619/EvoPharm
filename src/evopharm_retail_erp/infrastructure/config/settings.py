@@ -11,3 +11,4 @@ class ApplicationSettings:
     application_name: str
     data_directory: Path
     database_url: str
+    database_echo: bool = False

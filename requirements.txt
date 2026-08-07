@@ -1,5 +1,6 @@
 PySide6>=6.8
 SQLAlchemy>=2.0
+alembic>=1.14
 fastapi>=0.115
 opencv-python>=4.10
 paddleocr>=2.9
