@@ -54,3 +54,89 @@ class StockAdjustmentReason(str, Enum):
     THEFT_OR_LOSS = "THEFT_OR_LOSS"
     EXPIRY_WRITE_OFF = "EXPIRY_WRITE_OFF"
     CORRECTION = "CORRECTION"
+
+
+@unique
+class MedicineStatus(str, Enum):
+    """Lifecycle status of a medicine product master record."""
+
+    ACTIVE = "ACTIVE"
+    UNDER_REVIEW = "UNDER_REVIEW"
+    DISCONTINUED = "DISCONTINUED"
+    BANNED = "BANNED"
+
+
+@unique
+class DosageForm(str, Enum):
+    """Pharmaceutical dosage form of a medicine product."""
+
+    TABLET = "TABLET"
+    CAPSULE = "CAPSULE"
+    SYRUP = "SYRUP"
+    INJECTION = "INJECTION"
+    OINTMENT = "OINTMENT"
+    CREAM = "CREAM"
+    DROPS = "DROPS"
+    INHALER = "INHALER"
+    POWDER = "POWDER"
+    GEL = "GEL"
+    SUSPENSION = "SUSPENSION"
+    SOLUTION = "SOLUTION"
+    LOTION = "LOTION"
+
+
+@unique
+class DrugSchedule(str, Enum):
+    """Indian Drugs and Cosmetics Rules Schedule classification."""
+
+    SCHEDULE_H = "SCHEDULE_H"
+    SCHEDULE_H1 = "SCHEDULE_H1"
+    SCHEDULE_X = "SCHEDULE_X"
+    SCHEDULE_G = "SCHEDULE_G"
+    OTC = "OTC"
+    GENERAL = "GENERAL"
+    UNSCHEDULED = "UNSCHEDULED"
+
+
+@unique
+class UnitOfMeasure(str, Enum):
+    """Base dispensing unit of measure for packaging."""
+
+    TABLET = "TABLET"
+    CAPSULE = "CAPSULE"
+    BOTTLE = "BOTTLE"
+    VIAL = "VIAL"
+    AMPOULE = "AMPOULE"
+    TUBE = "TUBE"
+    PACK = "PACK"
+    SACHET = "SACHET"
+    STRIP = "STRIP"
+    PIECE = "PIECE"
+
+
+@unique
+class StrengthUnit(str, Enum):
+    """Measurement unit for active ingredient strength."""
+
+    MG = "MG"
+    G = "G"
+    ML = "ML"
+    MCG = "MCG"
+    IU = "IU"
+    PERCENT = "PERCENT"
+    MG_PER_ML = "MG_PER_ML"
+
+
+@unique
+class BarcodeType(str, Enum):
+    """Supported barcode symbologies for product identification."""
+
+    EAN_13 = "EAN_13"
+    EAN_8 = "EAN_8"
+    UPC_A = "UPC_A"
+    UPC_E = "UPC_E"
+    CODE_128 = "CODE_128"
+    CODE_39 = "CODE_39"
+    QR_CODE = "QR_CODE"
+    DATA_MATRIX = "DATA_MATRIX"
+    ITF_14 = "ITF_14"

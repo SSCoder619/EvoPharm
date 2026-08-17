@@ -1,8 +1,6 @@
-"""
-Domain analysis for the EvoPharm Architecture Analyzer.
+"""Domain analysis for the EvoPharm Engineering + V&V Toolkit.
 
-Inspects bounded contexts, verifies expected file structure, counts DDD
-building blocks, and computes a domain maturity score.
+Inspects bounded contexts, verifies expected file structure, counts DDD building blocks, and computes a domain maturity score.
 """
 
 from __future__ import annotations
@@ -10,19 +8,34 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from config import (
-    BOUNDED_CONTEXTS,
-    DOMAIN_DIR,
-    EXPECTED_DOMAIN_FILES,
-    OPTIONAL_DOMAIN_FILES,
-)
-from common import (
-    iter_subdirectories,
-    plural,
-    print_header,
-    print_section,
-)
-from parser import FileInfo, PythonParser
+try:
+    from config import (
+        BOUNDED_CONTEXTS,
+        DOMAIN_DIR,
+        EXPECTED_DOMAIN_FILES,
+        OPTIONAL_DOMAIN_FILES,
+    )
+    from common import (
+        iter_subdirectories,
+        plural,
+        print_header,
+        print_section,
+    )
+    from parser import PythonParser
+except ImportError:
+    from .config import (
+        BOUNDED_CONTEXTS,
+        DOMAIN_DIR,
+        EXPECTED_DOMAIN_FILES,
+        OPTIONAL_DOMAIN_FILES,
+    )
+    from .common import (
+        iter_subdirectories,
+        plural,
+        print_header,
+        print_section,
+    )
+    from .parser import PythonParser
 
 
 @dataclass
@@ -45,6 +58,14 @@ class ContextMetrics:
     missing_files: list[str] = field(default_factory=list)
 
 
+@dataclass
+class DomainCheckResult:
+    status: str = "PASS"
+    contexts_count: int = 0
+    score: float = 0.0
+    warnings: list[str] = field(default_factory=list)
+
+
 class DomainAnalyzer:
     """Analyzes the domain layer for DDD compliance and structural integrity."""
 
@@ -52,17 +73,20 @@ class DomainAnalyzer:
         self.parser = PythonParser()
         self.contexts: list[ContextMetrics] = []
 
-    def run(self) -> None:
+    def run(self) -> DomainCheckResult:
         """Execute the domain analysis and print the comprehensive report."""
         print_header("Domain Analysis")
         self._discover_contexts()
         self._print_details()
-        self._print_summary()
+        score = self._print_summary()
+
+        status = "PASS" if len(self.contexts) > 0 else "FAIL"
+        return DomainCheckResult(status=status, contexts_count=len(self.contexts), score=score)
 
     def _discover_contexts(self) -> None:
         """Scan the domain directory for bounded contexts and analyze them."""
         if not DOMAIN_DIR.is_dir():
-            print(f"⚠ Domain directory missing: {DOMAIN_DIR}")
+            print(f"[WARN] Domain directory missing: {DOMAIN_DIR}")
             return
 
         discovered = {d.name for d in iter_subdirectories(DOMAIN_DIR)}
@@ -103,9 +127,6 @@ class DomainAnalyzer:
 
         match fname:
             case "entities.py":
-                # Dataclasses typically model regular entities with immutable or 
-                # simple state. Plain classes often represent Aggregate Roots that 
-                # manage lifecycle, invariants, and repository dependencies.
                 metrics.entities += len(info.dataclasses)
                 ar_candidates = [c for c in info.classes if c not in info.dataclasses]
                 metrics.aggregate_roots += len(ar_candidates)
@@ -123,7 +144,6 @@ class DomainAnalyzer:
                 metrics.protocols += len(info.protocols)
 
             case "services.py":
-                # Domain services can be implemented as classes or module-level functions
                 metrics.domain_services += len(info.classes) + len(info.functions)
 
             case "specifications.py":
@@ -140,7 +160,7 @@ class DomainAnalyzer:
 
         for ctx in self.contexts:
             print_section(f"Context: {ctx.name}")
-            status = "✔" if not ctx.missing_files else "⚠"
+            status = "[OK]" if not ctx.missing_files else "[WARN]"
             print(f"{status} Required files: {ctx.required_files_present}/{len(EXPECTED_DOMAIN_FILES)}")
             print(f"  Optional files: {ctx.optional_files_present}/{len(OPTIONAL_DOMAIN_FILES)}")
 
@@ -157,10 +177,10 @@ class DomainAnalyzer:
             print(f"{plural(ctx.specifications, 'Specification')}")
             print(f"{plural(ctx.domain_events, 'Domain Event')}\n")
 
-    def _print_summary(self) -> None:
+    def _print_summary(self) -> float:
         """Calculate and print the overall domain maturity score."""
         if not self.contexts:
-            return
+            return 0.0
 
         total_required = len(EXPECTED_DOMAIN_FILES) * len(self.contexts)
         total_optional = len(OPTIONAL_DOMAIN_FILES) * len(self.contexts)
@@ -171,10 +191,6 @@ class DomainAnalyzer:
         req_coverage = (found_req / total_required * 100) if total_required > 0 else 0.0
         opt_coverage = (found_opt / total_optional * 100) if total_optional > 0 else 0.0
 
-        # DDD Maturity Score calculation:
-        # 60% weight on required structure completeness
-        # 20% weight on optional pattern adoption
-        # 20% weight on domain primitive richness (capped at 100)
         primitives_total = sum(
             c.entities + c.aggregate_roots + c.value_objects + 
             c.enums + c.protocols for c in self.contexts
@@ -189,7 +205,13 @@ class DomainAnalyzer:
         print(f"Optional Pattern Coverage:   {opt_coverage:.1f}%")
         print(f"DDD Maturity Score:          {ddd_score:.1f}%")
 
+        return ddd_score
 
-def run() -> None:
+
+def run() -> DomainCheckResult:
     """Module entry point executed by the main analyzer runner."""
-    DomainAnalyzer().run()
+    return DomainAnalyzer().run()
+
+
+if __name__ == "__main__":
+    run()

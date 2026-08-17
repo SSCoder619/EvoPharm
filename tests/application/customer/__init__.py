@@ -1,0 +1,1 @@
+"""Customer application tests package."""

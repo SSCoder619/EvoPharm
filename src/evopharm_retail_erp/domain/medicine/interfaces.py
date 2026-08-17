@@ -12,9 +12,61 @@ from datetime import date
 from typing import Protocol
 
 from ..medicine.value_objects import MedicineId
-from .entities import MedicineBatch
-from .enums import BatchStatus
+from .entities import Medicine, MedicineBatch
+from .enums import BatchStatus, MedicineStatus
 from .value_objects import BatchNumber, MedicineBatchId
+
+
+class MedicineRepository(Protocol):
+    """Persistence contract for the Medicine aggregate root."""
+
+    def add(self, medicine: Medicine) -> None:
+        """Persist a newly registered medicine master record."""
+        ...
+
+    def save(self, medicine: Medicine) -> None:
+        """Persist modifications to an existing medicine master record."""
+        ...
+
+    def get_by_id(self, medicine_id: MedicineId) -> Medicine | None:
+        """Retrieve a medicine master record by unique identifier."""
+        ...
+
+    def get_by_barcode(self, barcode_value: str) -> Medicine | None:
+        """Retrieve a medicine master record matching a barcode value."""
+        ...
+
+    def find_by_name(
+        self, query: str, *, offset: int = 0, limit: int = 20
+    ) -> Sequence[Medicine]:
+        """Find medicine master records by brand or alternate name."""
+        ...
+
+    def find_by_generic_name(self, generic_name: str) -> Sequence[Medicine]:
+        """Find medicine master records matching a generic composition name."""
+        ...
+
+    def find_by_hsn_code(self, hsn_code: str) -> Sequence[Medicine]:
+        """Find medicine master records with a matching HSN code."""
+        ...
+
+    def list_by_status(
+        self, status: MedicineStatus, *, offset: int = 0, limit: int = 50
+    ) -> Sequence[Medicine]:
+        """List medicine master records matching a given status."""
+        ...
+
+    def count_by_status(self, status: MedicineStatus) -> int:
+        """Count total medicine master records in a given status."""
+        ...
+
+    def exists_by_barcode(self, barcode_value: str) -> bool:
+        """Check if any medicine master record has the given barcode registered."""
+        ...
+
+    def exists_by_name(self, name: str) -> bool:
+        """Check if any medicine master record has the given brand name."""
+        ...
 
 
 class MedicineBatchRepository(Protocol):

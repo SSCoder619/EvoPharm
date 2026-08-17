@@ -140,3 +140,61 @@ class TooManyAlternateNamesError(MedicineDomainError):
             f"Medicine {medicine_id} already has the maximum of {limit} "
             "alternate names"
         )
+
+
+class InvalidBatchNumberError(MedicineDomainError):
+    def __init__(self, value: str, reason: str) -> None:
+        self.value = value
+        self.reason = reason
+        super().__init__(f"Invalid batch number {value!r}: {reason}")
+
+
+class InvalidBatchQuantityError(MedicineDomainError):
+    def __init__(self, reason: str) -> None:
+        self.reason = reason
+        super().__init__(f"Invalid batch quantity: {reason}")
+
+
+class InvalidExpiryDateError(MedicineDomainError):
+    def __init__(self, reason: str) -> None:
+        self.reason = reason
+        super().__init__(f"Invalid expiry date: {reason}")
+
+
+class InvalidManufacturingDateError(MedicineDomainError):
+    def __init__(self, reason: str) -> None:
+        self.reason = reason
+        super().__init__(f"Invalid manufacturing date: {reason}")
+
+
+class BatchExpiredError(MedicineDomainError):
+    def __init__(self, batch_id: UUID, expiry_date: str) -> None:
+        self.batch_id = batch_id
+        self.expiry_date = expiry_date
+        super().__init__(f"Batch {batch_id} expired on {expiry_date}")
+
+
+class BatchQuarantinedError(MedicineDomainError):
+    def __init__(self, batch_id: UUID, reason: str) -> None:
+        self.batch_id = batch_id
+        self.reason = reason
+        super().__init__(f"Batch {batch_id} is quarantined: {reason}")
+
+
+class BatchRecalledError(MedicineDomainError):
+    def __init__(self, batch_id: UUID, note: str) -> None:
+        self.batch_id = batch_id
+        self.note = note
+        super().__init__(f"Batch {batch_id} is recalled: {note}")
+
+
+class InsufficientBatchQuantityError(MedicineDomainError):
+    def __init__(self, batch_id: UUID, available: int, requested: int) -> None:
+        self.batch_id = batch_id
+        self.available = available
+        self.requested = requested
+        super().__init__(
+            f"Batch {batch_id} has insufficient quantity: {available} available, "
+            f"{requested} requested"
+        )
+

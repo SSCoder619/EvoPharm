@@ -173,6 +173,17 @@ class MedicineBatch:
         self._update_timestamp()
 
 
+from .enums import (
+    BatchSource,
+    BatchStatus,
+    DosageForm,
+    DrugSchedule,
+    MedicineStatus,
+    QuarantineReason,
+    StockAdjustmentReason,
+)
+
+
 @dataclass(slots=True, eq=False)
 class Medicine:
     """Aggregate root representing a Medicine product and its physical batches."""
@@ -184,8 +195,10 @@ class Medicine:
     manufacturer: ManufacturerRef
     hsn_code: HSNCode
     pack_configuration: PackConfiguration
-    storage_condition: StorageCondition
-    status: str = MEDICINE_STATUS_ACTIVE
+    storage_condition: StorageCondition | None = None
+    dosage_form: DosageForm = DosageForm.TABLET
+    schedule: DrugSchedule = DrugSchedule.UNSCHEDULED
+    status: MedicineStatus = MedicineStatus.ACTIVE
     _barcodes: set[Barcode] = field(default_factory=set)
     _alternate_names: list[str] = field(default_factory=list)
     _batches: dict[str, MedicineBatch] = field(default_factory=dict)
@@ -208,28 +221,60 @@ class Medicine:
     @classmethod
     def register(
         cls,
-        id: MedicineId,
         name: MedicineName,
         generic_name: GenericName,
         composition: Composition,
         manufacturer: ManufacturerRef,
         hsn_code: HSNCode,
         pack_configuration: PackConfiguration,
-        storage_condition: StorageCondition,
+        dosage_form: DosageForm = DosageForm.TABLET,
+        schedule: DrugSchedule = DrugSchedule.UNSCHEDULED,
+        barcodes: tuple[Barcode, ...] = (),
+        alternate_names: tuple[str, ...] = (),
+        storage_condition: StorageCondition | None = None,
+        id: MedicineId | None = None,
     ) -> "Medicine":
         """Register a new medicine master record."""
+        med_id = id if id is not None else MedicineId.generate()
+        clean_alternates: list[str] = []
+        for alt in alternate_names:
+            c = " ".join(alt.split())
+            if c and c.casefold() not in {a.casefold() for a in clean_alternates}:
+                clean_alternates.append(c)
         medicine = cls(
-            id=id,
+            id=med_id,
             name=name,
             generic_name=generic_name,
             composition=composition,
             manufacturer=manufacturer,
             hsn_code=hsn_code,
             pack_configuration=pack_configuration,
+            dosage_form=dosage_form,
+            schedule=schedule,
             storage_condition=storage_condition,
+            _barcodes=set(barcodes),
+            _alternate_names=clean_alternates,
         )
-        # TODO: Record MedicineRegisteredDomainEvent
         return medicine
+
+    def has_barcode(self, barcode_value: str) -> bool:
+        """Check if this medicine has the specified barcode value registered."""
+        cleaned = "".join(barcode_value.split())
+        return any(bc.value == cleaned for bc in self._barcodes)
+
+    def rename(self, new_name: MedicineName) -> None:
+        """Rename the medicine brand name."""
+        if self.status == MedicineStatus.BANNED:
+            raise MedicineAlreadyBannedError(self.id.value)
+        self.name = new_name
+        self._touch()
+
+    def mark_under_review(self, reason: str = "") -> None:
+        """Place the medicine master record under review."""
+        if self.status == MedicineStatus.BANNED:
+            raise MedicineAlreadyBannedError(self.id.value)
+        self.status = MedicineStatus.UNDER_REVIEW
+        self._touch()
 
     # -- internals ------------------------------------------------------
 

@@ -1,0 +1,1 @@
+"""Invoice domain tests package."""

@@ -7,16 +7,21 @@ depend on no database, UI framework, or other bounded context.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
 from uuid import UUID, uuid4
 
 from .enums import BarcodeType, StrengthUnit, UnitOfMeasure
 from .exceptions import (
     InvalidBarcodeError,
+    InvalidBatchNumberError,
+    InvalidBatchQuantityError,
     InvalidCompositionError,
+    InvalidExpiryDateError,
     InvalidGenericNameError,
     InvalidHSNCodeError,
     InvalidManufacturerReferenceError,
+    InvalidManufacturingDateError,
     InvalidMedicineNameError,
     InvalidPackConfigurationError,
     InvalidStorageConditionError,
@@ -226,3 +231,98 @@ class StorageCondition:
                 "a storage-condition description must be at most 250 characters"
             )
         object.__setattr__(self, "description", cleaned)
+
+
+@dataclass(frozen=True, slots=True)
+class MedicineBatchId:
+    """Stable identity of a medicine batch entity."""
+
+    value: UUID
+
+    @classmethod
+    def generate(cls) -> "MedicineBatchId":
+        return cls(uuid4())
+
+    @classmethod
+    def from_string(cls, value: str) -> "MedicineBatchId":
+        return cls(UUID(value))
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+
+@dataclass(frozen=True, slots=True)
+class BatchNumber:
+    """A manufacturer-assigned batch or lot identifier."""
+
+    value: str
+
+    def __post_init__(self) -> None:
+        cleaned = "".join(self.value.split())
+        if not cleaned:
+            raise InvalidBatchNumberError(self.value, "a batch number is required")
+        if len(cleaned) > 100:
+            raise InvalidBatchNumberError(
+                self.value, "must be at most 100 characters"
+            )
+        object.__setattr__(self, "value", cleaned)
+
+    def __str__(self) -> str:
+        return self.value
+
+
+@dataclass(frozen=True, slots=True)
+class BatchQuantity:
+    """Quantity of units in a batch."""
+
+    value: int
+
+    def __post_init__(self) -> None:
+        if isinstance(self.value, bool) or self.value < 0:
+            raise InvalidBatchQuantityError("quantity must be a non-negative integer")
+
+    def __str__(self) -> str:
+        return str(self.value)
+
+
+@dataclass(frozen=True, slots=True)
+class ManufacturingDate:
+    """Manufacturing date of a batch."""
+
+    value: date
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.value, date):
+            raise InvalidManufacturingDateError("manufacturing date must be a valid date")
+
+    def __str__(self) -> str:
+        return self.value.isoformat()
+
+
+@dataclass(frozen=True, slots=True)
+class ExpiryDate:
+    """Expiry date of a batch."""
+
+    value: date
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.value, date):
+            raise InvalidExpiryDateError("expiry date must be a valid date")
+
+    def __str__(self) -> str:
+        return self.value.isoformat()
+
+
+@dataclass(frozen=True, slots=True)
+class ReceivedDate:
+    """Date when a batch was received into pharmacy inventory."""
+
+    value: date
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.value, date):
+            raise InvalidExpiryDateError("received date must be a valid date")
+
+    def __str__(self) -> str:
+        return self.value.isoformat()
+
